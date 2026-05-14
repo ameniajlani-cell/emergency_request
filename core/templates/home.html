@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Emergency Dashboard{% endblock %}
+
+{% block content %}
+<section class="hero-panel p-4 p-lg-5 mb-4">
+    <div class="row g-4 align-items-center">
+        <div class="col-lg-7">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="hero-mark">
+                    <i class="bi bi-broadcast-pin"></i>
+                </span>
+                <div>
+                    <div class="page-kicker">Live Incident Board</div>
+                    <h1 class="page-title">Emergency Requests</h1>
+                </div>
+            </div>
+            <p class="page-subtitle mb-0">Central dispatch overview.</p>
+        </div>
+        <div class="col-lg-5">
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="stat-tile">
+                        <div class="stat-value">{{ stats.total }}</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-tile">
+                        <div class="stat-value text-warning">{{ stats.pending }}</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-tile">
+                        <div class="stat-value text-primary">{{ stats.in_progress }}</div>
+                        <div class="stat-label">In Progress</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-tile">
+                        <div class="stat-value text-success">{{ stats.resolved }}</div>
+                        <div class="stat-label">Resolved</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
+    <div>
+        <div class="page-kicker">Queue</div>
+        <h2 class="h4 fw-bold mb-0">Current Requests</h2>
+    </div>
+    <a class="btn btn-danger" href="{% url 'create_request' %}">
+        <i class="bi bi-plus-circle"></i>
+        New Request
+    </a>
+</div>
+
+<form method="GET" class="search-panel p-3 p-lg-4 mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-6 col-xl-3">
+            <label class="form-label" for="search-title">Title</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input class="form-control" id="search-title" type="search" name="title" value="{{ filters.title }}" placeholder="Search title">
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <label class="form-label" for="search-type">Type</label>
+            <select class="form-select" id="search-type" name="type">
+                <option value="">All types</option>
+                {% for emergency_type in emergency_types %}
+                    <option value="{{ emergency_type.id }}" {% if filters.type == emergency_type.id|stringformat:"s" %}selected{% endif %}>{{ emergency_type.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <label class="form-label" for="search-status">Status</label>
+            <select class="form-select" id="search-status" name="status">
+                <option value="">All statuses</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <label class="form-label" for="search-location">Location</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                <input class="form-control" id="search-location" type="search" name="location" value="{{ filters.location }}" placeholder="Area">
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-2">
+            <label class="form-label" for="search-requester">Requester</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                <input class="form-control" id="search-requester" type="search" name="requester" value="{{ filters.requester }}" placeholder="Name">
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-1">
+            <div class="d-flex gap-2">
+                <button class="btn btn-danger flex-grow-1" type="submit" aria-label="Search">
+                    <i class="bi bi-funnel"></i>
+                    <span class="d-xl-none">Search</span>
+                </button>
+                {% if has_filters %}
+                    <a class="btn btn-outline-secondary btn-icon-only" href="{% url 'home' %}" aria-label="Clear search">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% if has_filters %}
+        <div class="search-summary mt-3">
+            <i class="bi bi-filter-circle"></i>
+            Showing {{ stats.total }} matching request{{ stats.total|pluralize }}.
+        </div>
+    {% endif %}
+</form>
+
+<div class="row g-3">
+    {% for req in requests %}
+        <div class="col-12">
+            <article class="request-card d-flex overflow-hidden">
+                <div class="request-accent {% if req.emergency_type_key == 'medical' %}accent-medical{% elif req.emergency_type_key == 'fire' %}accent-fire{% else %}accent-police{% endif %}"></div>
+                <div class="flex-grow-1 p-3 p-lg-4">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-3">
+                        <div>
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                <span class="badge badge-soft {% if req.emergency_type_key == 'medical' %}badge-medical{% elif req.emergency_type_key == 'fire' %}badge-fire{% else %}badge-police{% endif %}">
+                                    {% if req.emergency_type_key == 'medical' %}
+                                        <i class="bi bi-heart-pulse"></i>
+                                    {% elif req.emergency_type_key == 'fire' %}
+                                        <i class="bi bi-fire"></i>
+                                    {% else %}
+                                        <i class="bi bi-shield-check"></i>
+                                    {% endif %}
+                                    {{ req.emergency_type.name }}
+                                </span>
+                                <span class="badge badge-soft {% if req.status == 'pending' %}badge-pending{% elif req.status == 'in_progress' %}badge-progress{% else %}badge-resolved{% endif %}">
+                                    {{ req.get_status_display }}
+                                </span>
+                            </div>
+                            <h3 class="h5 fw-bold mb-2">{{ req.title }}</h3>
+                            <p class="text-secondary mb-3">{{ req.description }}</p>
+                            {% if req.before_image or req.after_image %}
+                                <div class="image-strip mb-3">
+                                    {% if req.before_image %}
+                                        <a class="image-thumb" href="{{ req.before_image.url }}" target="_blank" rel="noopener">
+                                            <span>Before</span>
+                                            <img src="{{ req.before_image.url }}" alt="Before image for {{ req.title }}">
+                                        </a>
+                                    {% endif %}
+                                    {% if req.after_image %}
+                                        <a class="image-thumb" href="{{ req.after_image.url }}" target="_blank" rel="noopener">
+                                            <span>After</span>
+                                            <img src="{{ req.after_image.url }}" alt="After image for {{ req.title }}">
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            <div class="d-flex flex-wrap gap-3">
+                                <span class="meta-chip">
+                                    <i class="bi bi-person"></i>
+                                    {{ req.requester.name }}
+                                </span>
+                                <span class="meta-chip">
+                                    <i class="bi bi-geo-alt"></i>
+                                    {{ req.location }}
+                                </span>
+                                <span class="meta-chip">
+                                    <i class="bi bi-clock"></i>
+                                    {{ req.created_at|date:"M d, Y H:i" }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-2">
+                            <a class="btn btn-outline-primary btn-sm" href="{% url 'update_request' req.id %}">
+                                <i class="bi bi-pencil-square"></i>
+                                Update
+                            </a>
+                            <a class="btn btn-outline-danger btn-sm" href="{% url 'delete_request' req.id %}">
+                                <i class="bi bi-trash"></i>
+                                Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    {% empty %}
+        <div class="col-12">
+            <div class="empty-state">
+                <div class="empty-mark">
+                    <i class="bi {% if has_filters %}bi-search{% else %}bi-inbox{% endif %}"></i>
+                </div>
+                {% if has_filters %}
+                    <h2 class="h4 fw-bold">No matching emergency requests.</h2>
+                    <a class="btn btn-outline-secondary mt-2" href="{% url 'home' %}">
+                        <i class="bi bi-x-lg"></i>
+                        Clear Search
+                    </a>
+                {% else %}
+                    <h2 class="h4 fw-bold">No emergency requests yet.</h2>
+                    <a class="btn btn-danger mt-2" href="{% url 'create_request' %}">
+                        <i class="bi bi-plus-circle"></i>
+                        Create First Request
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{% if page_obj.paginator.count %}
+    <div class="pagination-wrap mt-4">
+        <div class="pagination-count">
+            Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+        </div>
+
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Emergency request pages">
+                <ul class="pagination mb-0">
+                    <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                        {% if page_obj.has_previous %}
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous page">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        {% else %}
+                            <span class="page-link" aria-hidden="true">
+                                <i class="bi bi-chevron-left"></i>
+                            </span>
+                        {% endif %}
+                    </li>
+
+                    {% for page_number in page_obj.paginator.page_range %}
+                        <li class="page-item {% if page_obj.number == page_number %}active{% endif %}">
+                            {% if page_obj.number == page_number %}
+                                <span class="page-link">{{ page_number }}</span>
+                            {% else %}
+                                <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_number }}">{{ page_number }}</a>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+
+                    <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                        {% if page_obj.has_next %}
+                            <a class="page-link" href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next page">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        {% else %}
+                            <span class="page-link" aria-hidden="true">
+                                <i class="bi bi-chevron-right"></i>
+                            </span>
+                        {% endif %}
+                    </li>
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

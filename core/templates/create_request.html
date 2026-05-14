@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Emergency Request{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="page-kicker">Intake</div>
+    <h1 class="page-title">Send Emergency Request</h1>
+</div>
+
+<form method="POST" enctype="multipart/form-data" data-validate="emergency" class="tool-card p-4 p-lg-5">
+    {% csrf_token %}
+
+    <div class="section-title">
+        <i class="bi bi-person-lines-fill"></i>
+        <span>Requester Info</span>
+    </div>
+    {{ requester_form.non_field_errors }}
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <label class="form-label" for="{{ requester_form.name.id_for_label }}">{{ requester_form.name.label }}</label>
+            {{ requester_form.name }}
+            {{ requester_form.name.errors }}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="{{ requester_form.phone.id_for_label }}">{{ requester_form.phone.label }}</label>
+            {{ requester_form.phone }}
+            {{ requester_form.phone.errors }}
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="{{ requester_form.location.id_for_label }}">{{ requester_form.location.label }}</label>
+            {{ requester_form.location }}
+            {{ requester_form.location.errors }}
+            {{ requester_form.latitude }}
+            {{ requester_form.longitude }}
+            <div id="map-container-requester" style="width: 100%; height: 300px; border: 1px solid #ddd; border-radius: 4px; margin-top: 10px;"></div>
+            <p class="text-muted small mt-2">Click on the map to select requester location</p>
+        </div>
+    </div>
+
+    <div class="section-title">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span>Emergency Info</span>
+    </div>
+    {{ request_form.non_field_errors }}
+
+    <div class="row g-3">
+        <div class="col-md-8">
+            <label class="form-label" for="{{ request_form.title.id_for_label }}">{{ request_form.title.label }}</label>
+            {{ request_form.title }}
+            {{ request_form.title.errors }}
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="{{ request_form.emergency_type.id_for_label }}">{{ request_form.emergency_type.label }}</label>
+            {{ request_form.emergency_type }}
+            {{ request_form.emergency_type.errors }}
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="{{ request_form.location.id_for_label }}">{{ request_form.location.label }}</label>
+            {{ request_form.location }}
+            {{ request_form.location.errors }}
+            {{ request_form.latitude }}
+            {{ request_form.longitude }}
+            <div id="map-container-request" style="width: 100%; height: 300px; border: 1px solid #ddd; border-radius: 4px; margin-top: 10px;"></div>
+            <p class="text-muted small mt-2">Click on the map to select emergency location</p>
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="{{ request_form.description.id_for_label }}">{{ request_form.description.label }}</label>
+            {{ request_form.description }}
+            {{ request_form.description.errors }}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="{{ request_form.before_image.id_for_label }}">{{ request_form.before_image.label }}</label>
+            {{ request_form.before_image }}
+            {{ request_form.before_image.errors }}
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="{{ request_form.after_image.id_for_label }}">{{ request_form.after_image.label }}</label>
+            {{ request_form.after_image }}
+            {{ request_form.after_image.errors }}
+        </div>
+    </div>
+
+    <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
+        <a class="btn btn-outline-secondary" href="{% url 'home' %}">
+            <i class="bi bi-arrow-left"></i>
+            Cancel
+        </a>
+        <button class="btn btn-danger" type="submit">
+            <i class="bi bi-send"></i>
+            Send Request
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if google_maps_api_key and google_maps_api_key != 'YOUR_GOOGLE_MAPS_API_KEY' %}
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}"></script>
+    <script src="{% static 'core/maps.js' %}" defer></script>
+{% else %}
+    <script src="{% static 'core/maps-fallback.js' %}" defer></script>
+{% endif %}
+<script src="{% static 'core/validation.js' %}?v=2" defer></script>
+{% endblock %}
